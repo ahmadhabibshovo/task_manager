@@ -1,16 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/ui/screens/auth/sign_in_screen.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/routes.dart';
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
+import 'package:task_manager/ui/widgets/snake_bar_message.dart';
 
-import '../../../data/model/network_response.dart';
-import '../../../data/network_caller/network_caller.dart';
-import '../../../data/utilities/urls.dart';
+import '../../controller/auth_controllers/email_verification_controller.dart';
 import '../../utility/app_constant.dart';
-import '../../widgets/snake_bar_message.dart';
-import 'pin_verification_screen.dart';
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -23,7 +21,7 @@ class EmailVerificationScreen extends StatefulWidget {
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   final _emailTEController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _verifyEmailInProgress = false;
+  final emailVerificationController=Get.find<EmailVerificationController>();
 
   @override
   Widget build(BuildContext context) {
@@ -68,13 +66,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     const SizedBox(
                       height: 8,
                     ),
-                    Visibility(
-                      visible: _verifyEmailInProgress == false,
-                      replacement: CenteredProgressIndicator(),
+                    GetBuilder<EmailVerificationController>(builder: (emailVerificationController){return Visibility(
+                      visible: !emailVerificationController.verifyEmailInProgress,
+                      replacement: const CenteredProgressIndicator(),
                       child: ElevatedButton(
                           onPressed: _onTapConfirmButton,
                           child: const Icon(Icons.arrow_circle_right_outlined)),
-                    ),
+                    ); }),
+
                     const SizedBox(
                       height: 50,
                     ),
@@ -104,43 +103,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   }
 
   _onTapSignInButton() {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (ctx) => const SignInScreen()));
+   Get.offAllNamed(Routes.signInScreenRoutes);
   }
 
-  _onTapConfirmButton() {
+  _onTapConfirmButton() async{
     if (_formKey.currentState!.validate()) {
-      _emailValidate();
+     bool isSuccess = await  emailVerificationController.emailValidate(_emailTEController.text.trim());
+     if(isSuccess){
+       Get.offAllNamed(Routes.otpVerificationScreenRoutes(_emailTEController.text.trim()));
+     }
+     else{
+       showSnakeBarMessage(context,emailVerificationController.errorMessage,true);
+
+     }
     }
   }
 
-  _emailValidate() async {
-    _verifyEmailInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    NetworkResponse response = await NetworkCaller.getRequest(
-        Urls.recoverVerifyEmail(_emailTEController.text.trim()));
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Otp Send');
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (ctx) => PinVerificationScreen(
-                      email: _emailTEController.text.trim(),
-                    )));
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Email not Valid !! Try again', true);
-      }
-    }
-    _verifyEmailInProgress = false;
-    if (mounted) {
-      setState(() {});
-    }
-  }
+
 
   @override
   void dispose() {

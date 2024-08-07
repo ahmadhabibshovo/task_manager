@@ -1,87 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:task_manager/data/model/network_response.dart';
-import 'package:task_manager/data/model/task_list_wrapper_model.dart';
-import 'package:task_manager/data/network_caller/network_caller.dart';
-import 'package:task_manager/data/utilities/urls.dart';
-import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
-import 'package:task_manager/ui/widgets/snake_bar_message.dart';
+import 'package:get/get.dart';
 
-import '../../data/model/task_model.dart';
+import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
+
+import '../controller/in_progress_task_controller.dart';
 import '../widgets/task_item.dart';
 import '../widgets/task_summery.dart';
-
 class InProgressTaskScreen extends StatefulWidget {
   const InProgressTaskScreen({super.key});
 
   @override
   State<InProgressTaskScreen> createState() => _InProgressTaskScreenState();
+
 }
 
 class _InProgressTaskScreenState extends State<InProgressTaskScreen> {
-  bool _getInProgressTaskInProgress = false;
-
-  List<TaskModel> inProgressTaskList = [];
-
+  final inProgressTaskController=Get.find<InProgressTaskController>();
   @override
   void initState() {
+  inProgressTaskController.getInProgressTasks();
     super.initState();
-    _getInProgressTasks();
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TaskSummery(),
-          Expanded(
-              child: RefreshIndicator(
-            onRefresh: () async {
-              _getInProgressTasks();
-            },
-            child: Visibility(
-              visible: _getInProgressTaskInProgress == false,
-              replacement: const CenteredProgressIndicator(),
-              child: ListView.separated(
-                  itemBuilder: (_, index) {
-                    return TaskItem(
-                      taskModel: inProgressTaskList[index],
-                    );
-                  },
-                  separatorBuilder: (_, __) {
-                    return const SizedBox(
-                      height: 3,
-                    );
-                  },
-                  itemCount: inProgressTaskList.length),
-            ),
-          ))
-        ],
-      ),
-    );
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TaskSummery(),
+            Expanded(
+              child: GetBuilder<InProgressTaskController>(builder: (inProgressTaskController){
+                return  Visibility(
+                  visible: !inProgressTaskController.getInProgressTaskInProgress,
+                  replacement: const CenteredProgressIndicator(),
+                  child: ListView.separated(
+                      itemBuilder: (_, index) {
+                        return TaskItem(
+                          taskModel: inProgressTaskController.inProgressTaskList[index],selectedIndex: 2,
+                        );
+                      },
+                      separatorBuilder: (_, __) {
+                        return const SizedBox(
+                          height: 3,
+                        );
+                      },
+                      itemCount:inProgressTaskController.inProgressTaskList.length),
+                );
+              },),
+            )
+          ],
+        ));
   }
 
-  Future<void> _getInProgressTasks() async {
-    _getInProgressTaskInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.inProgressTask);
-    if (response.isSuccess) {
-      TaskListWrapperModel taskListWrapperModel =
-          TaskListWrapperModel.fromJson(response.responseData);
-      inProgressTaskList = taskListWrapperModel.taskList ?? [];
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(
-            context, 'Get InProgress task failed !! Try again', true);
-      }
-    }
-    _getInProgressTaskInProgress = false;
-    if (mounted) {
-      setState(() {});
-    }
-  }
+
 }

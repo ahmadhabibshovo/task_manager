@@ -1,13 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/ui/screens/auth/sign_in_screen.dart';
+import 'package:get/get.dart';
+
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
 
-import '../../../data/model/network_response.dart';
-import '../../../data/network_caller/network_caller.dart';
-import '../../../data/utilities/urls.dart';
+
+import '../../../routes.dart';
+import '../../controller/auth_controllers/set_password_controller.dart';
 import '../../widgets/snake_bar_message.dart';
 
 class SetPasswordScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class SetPasswordScreen extends StatefulWidget {
 class _SetPasswordScreenState extends State<SetPasswordScreen> {
   final _passwordTEController = TextEditingController();
   final _confirmTEController = TextEditingController();
-  bool _resetPasswordInProgress = false;
+  final setPasswordController = Get.find<SetPasswordController>();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -78,13 +79,14 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                     const SizedBox(
                       height: 8,
                     ),
-                    Visibility(
-                      visible: _resetPasswordInProgress == false,
-                      replacement: CenteredProgressIndicator(),
+                    GetBuilder<SetPasswordController>(builder: (setPasswordController){return Visibility(
+                      visible: !setPasswordController.setPasswordInProgress,
+                      replacement: const CenteredProgressIndicator(),
                       child: ElevatedButton(
                           onPressed: onTapConfirmButton,
                           child: const Text('Confirm')),
-                    ),
+                    );}),
+
                     const SizedBox(
                       height: 50,
                     ),
@@ -114,14 +116,21 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   }
 
   onTapSignInButton() {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (ctx) => const SignInScreen()));
+    Get.offAllNamed(Routes.signInScreenRoutes);
   }
 
-  onTapConfirmButton() {
+  onTapConfirmButton()async {
     if (_formKey.currentState!.validate() &&
         _passwordTEController.text == _confirmTEController.text) {
-      _resetPassword();
+    bool isSuccess=await setPasswordController.setPassword(widget.otp, widget.email, _confirmTEController.text);
+    if(isSuccess){
+      Get.offAllNamed(Routes.signInScreenRoutes);
+      showSnakeBarMessage(context, "Reset Password Successfully!!!");
+
+    }
+    else{
+      showSnakeBarMessage(context, setPasswordController.errorMessage,true);
+    }
     } else {
       if (mounted) {
         showSnakeBarMessage(
@@ -130,36 +139,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     }
   }
 
-  _resetPassword() async {
-    _resetPasswordInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    Map<String, dynamic> requestBody = {
-      "email": widget.email,
-      "OTP": widget.otp,
-      "password": _confirmTEController.text
-    };
 
-    NetworkResponse response = await NetworkCaller.postRequest(
-        Urls.recoverResetPassWord,
-        body: requestBody);
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Password reset');
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (ctx) => SignInScreen()),
-            (route) => false);
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Something is Wrong  !! Try again', true);
-      }
-    }
-    _resetPasswordInProgress = false;
-    setState(() {});
-  }
 
   @override
   void dispose() {

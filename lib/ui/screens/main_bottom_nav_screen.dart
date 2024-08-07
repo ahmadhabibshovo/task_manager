@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:task_manager/ui/screens/add_new_task_screen.dart';
 import 'package:task_manager/ui/screens/cancelled_task_screen.dart';
 import 'package:task_manager/ui/screens/completed_task_screen.dart';
@@ -7,22 +8,28 @@ import 'package:task_manager/ui/screens/new_task_screen.dart';
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/widgets/profile_appbar_widget.dart';
 
-class MainBottomNavScreen extends StatefulWidget {
-  const MainBottomNavScreen({super.key});
+import '../../routes.dart';
 
+class MainBottomNavScreen extends StatefulWidget {
+  const MainBottomNavScreen({super.key,  this.selectedIndex});
+final int? selectedIndex;
   @override
   State<MainBottomNavScreen> createState() => _MainBottomNavScreenState();
 }
 
 class _MainBottomNavScreenState extends State<MainBottomNavScreen> {
-  int _selectedIndex = 0;
+  late int _selectedIndex ;
   List<Widget> screens = [
-    const NewTaskScreen(),
-    const CompletedTaskScreen(),
-    const InProgressTaskScreen(),
-    const CancelledTaskScreen()
+     const NewTaskScreen(),
+     const CompletedTaskScreen(),
+     const InProgressTaskScreen(),
+     const CancelledTaskScreen()
   ];
-
+@override
+  void initState() {
+    _selectedIndex = widget.selectedIndex ??0;
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,7 +64,6 @@ class _MainBottomNavScreenState extends State<MainBottomNavScreen> {
   }
 
   void _onTapAddButton() {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (ctx) => const AddNewTaskScreen()));
+    Get.toNamed(Routes.addNewTaskScreen);
   }
 }

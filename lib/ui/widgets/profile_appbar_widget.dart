@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:task_manager/ui/controller/auth_controller.dart';
-import 'package:task_manager/ui/screens/auth/sign_in_screen.dart';
-import 'package:task_manager/ui/screens/update_profile_screen.dart';
+import 'package:get/get.dart';
 
+import '../../routes.dart';
+import '../controller/auth_controllers/auth_controller.dart';
 import '../utility/app_colors.dart';
 
 AppBar profileAppBar(context, [bool fromUpdateProfile = false]) {
@@ -14,12 +14,7 @@ AppBar profileAppBar(context, [bool fromUpdateProfile = false]) {
         if (fromUpdateProfile) {
           return;
         }
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const UpdateProfileScreen(),
-          ),
-        );
+        Get.toNamed(Routes.updateProfileScreen);
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,10 +34,7 @@ AppBar profileAppBar(context, [bool fromUpdateProfile = false]) {
     actions: [
       IconButton(
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const SignInScreen()),
-                (route) => false);
+            Get.offAllNamed(Routes.signInScreenRoutes);
             AuthController.clearALlData();
           },
           icon: const Icon(Icons.logout))
@@ -50,20 +42,15 @@ AppBar profileAppBar(context, [bool fromUpdateProfile = false]) {
     backgroundColor: AppColors.themeColor,
     leading: GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const UpdateProfileScreen(),
-          ),
-        );
+        Get.toNamed(Routes.updateProfileScreen);
       },
       child: CircleAvatar(
         radius: 12,
-        child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: AuthController.userData!.photo == ''
-                ? Icon(Icons.person)
-                : Image.memory(base64Decode(AuthController.userData!.photo!))),
+        backgroundImage:
+        AuthController.userData!.photo == ''
+            ? null:MemoryImage(base64Decode(AuthController.userData!.photo!),),
+        child: AuthController.userData!.photo == ''
+            ? const Icon(Icons.person):null,
       ),
     ),
   );

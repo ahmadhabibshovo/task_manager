@@ -1,14 +1,16 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:regexpattern/regexpattern.dart';
-import 'package:task_manager/data/model/network_response.dart';
-import 'package:task_manager/data/network_caller/network_caller.dart';
-import 'package:task_manager/data/utilities/urls.dart';
-import 'package:task_manager/ui/screens/auth/sign_in_screen.dart';
+
+import 'package:task_manager/routes.dart';
+
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/utility/app_constant.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/snake_bar_message.dart';
+
+import '../../controller/auth_controllers/sign_up_controller.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -25,8 +27,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordTEController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _showPassword = false;
-  bool _registrationInProgress = false;
-
+  final signUpController=Get.find<SignUpController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,8 +125,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(
                       height: 8,
                     ),
-                    Visibility(
-                      visible: !_registrationInProgress,
+                    GetBuilder<SignUpController>(builder:(signUpController)=> Visibility(
+                      visible:!signUpController.isSignUpProgress,
                       replacement: const Center(
                         child: CircularProgressIndicator(),
                       ),
@@ -134,7 +135,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             onTapSignInButton();
                           },
                           child: const Icon(Icons.arrow_circle_right_outlined)),
-                    ),
+                    ),),
+
                     const SizedBox(
                       height: 50,
                     ),
@@ -146,12 +148,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         children: [
                           TextSpan(
                             recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (ctx) => SignInScreen()));
+                              ..onTap =
+                              (){
+                                onTapSignInText();
                               },
+
                             text: 'Sign in',
                             style: const TextStyle(color: AppColors.themeColor),
                           ),
@@ -170,50 +171,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   onTapSignInButton() async {
     if (_formKey.currentState!.validate()) {
-      await _registerUser();
-    }
-  }
-
-  _registerUser() async {
-    _registrationInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    Map<String, dynamic> requestInput = {
-      "email": _emailTEController.text.trim(),
-      "firstName": _firstNameTEController.text.trim(),
-      "lastName": _lastNameTEController.text.trim(),
-      "mobile": _mobileNoTEController.text.trim(),
-      "password": _passwordTEController.text,
-      "photo": "",
-    };
-    NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.registration, body: requestInput);
-    _registrationInProgress = false;
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, "Registration Successful");
+      Map<String, dynamic> requestInput = {
+        "email": _emailTEController.text.trim(),
+        "firstName": _firstNameTEController.text.trim(),
+        "lastName": _lastNameTEController.text.trim(),
+        "mobile": _mobileNoTEController.text.trim(),
+        "password": _passwordTEController.text,
+        "photo": "",
+      };
+      bool isaSuccess = await signUpController.signUp(requestInput);
+      if(isaSuccess){
+        Get.offAllNamed(Routes.signInScreenRoutes);
+        showSnakeBarMessage(context, "Sign Up Successful !!!");
       }
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (ctx) => const SignInScreen()),
-          (route) => false);
-      _clearTextField();
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context,
-            response.errorMessage ?? 'Registration Failed Try Again!!', true);
+      else{
+        showSnakeBarMessage(context, signUpController.errorMessage,true);
       }
     }
   }
-
-  void _clearTextField() {
-    _emailTEController.clear();
-    _firstNameTEController.clear();
-    _lastNameTEController.clear();
-    _mobileNoTEController.clear();
-    _passwordTEController.clear();
+  onTapSignInText(){
+    Get.offAllNamed(Routes.signInScreenRoutes);
   }
+
+
+
+
 
   @override
   void dispose() {

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/bindings.dart';
+import 'package:task_manager/routes.dart';
+// ignore: unused_import
 import 'package:task_manager/ui/screens/auth/splash_screen.dart';
 import 'package:task_manager/ui/utility/app_colors.dart';
 
@@ -15,11 +19,13 @@ class _AppState extends State<App> {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
+      initialBinding: ControllerBindings(),
       navigatorKey: App.navigatorKey,
       title: 'Flutter Demo',
       theme: lightThemeData,
-      home: const SplashScreen(),
+      initialRoute: Routes.splashScreenRoutes,
+      getPages: Routes.routes,
     );
   }
 }

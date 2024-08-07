@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:task_manager/data/model/task_model.dart';
+import 'package:task_manager/ui/controller/delete_task_controller.dart';
+import 'package:task_manager/ui/controller/task_update_controller.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
-import 'package:task_manager/ui/widgets/snake_bar_message.dart';
 
-import '../../data/model/network_response.dart';
-import '../../data/network_caller/network_caller.dart';
-import '../../data/utilities/urls.dart';
-import '../screens/main_bottom_nav_screen.dart';
 
 class TaskItem extends StatefulWidget {
   const TaskItem({
     super.key,
-    required this.taskModel,
+    required this.taskModel, required this.selectedIndex,
   });
 
   final TaskModel taskModel;
-
+final int selectedIndex;
   @override
   State<TaskItem> createState() => _TaskItemState();
 }
 
 class _TaskItemState extends State<TaskItem> {
-  bool _deleteInProgress = false;
-  bool _taskStatusUpdateInProgress = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -52,34 +49,51 @@ class _TaskItemState extends State<TaskItem> {
                 ),
                 ButtonBar(
                   children: [
-                    Visibility(
-                      visible: _deleteInProgress == false,
-                      replacement: CenteredProgressIndicator(),
-                      child: IconButton(
-                          onPressed: () {
-                            deleteTask(widget.taskModel.sId!);
-                          },
-                          icon: const Icon(Icons.delete)),
-                    ),
-                    DropdownButton<String>(
-                      value: dropdownValue,
-                      onChanged: (newValue) {
-                        dropdownValue = newValue;
-                        _taskStatusUpdate(
-                            dropdownValue!, widget.taskModel.sId!);
-                      },
-                      items: <String>[
-                        'New',
-                        'Completed',
-                        'InProgress',
-                        'Cancelled'
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                    ),
+                    GetBuilder<DeleteTaskController>(builder: (deleteTaskController){
+                      return Visibility(
+                        visible: !deleteTaskController.deleteInProgress,
+                        replacement: const CenteredProgressIndicator(),
+                        child: IconButton(
+                            onPressed: () {
+                              deleteTaskController.deleteTask(widget.taskModel.sId!,widget.selectedIndex);
+                            },
+                            icon: const Icon(Icons.delete)),
+                      );
+                    }),
+    GetBuilder<TaskUpdateController>(builder: (taskUpdateController){
+    return Visibility(
+    visible: !taskUpdateController.taskUpdateInProgress,
+    replacement: const CenteredProgressIndicator(),
+    child: PopupMenuButton<String>(
+      onSelected: (newValue) {
+        dropdownValue = newValue;
+        taskUpdateController.taskStatusUpdate(dropdownValue!, widget.taskModel.sId!,widget.selectedIndex);
+      },
+      itemBuilder: (BuildContext context) {
+        return <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+            value: 'New',
+            child: Text('New'),
+          ),
+          const PopupMenuItem<String>(
+            value: 'Completed',
+            child: Text('Completed'),
+          ),
+          const PopupMenuItem<String>(
+            value: 'InProgress',
+            child: Text('InProgress'),
+          ),
+          const PopupMenuItem<String>(
+            value: 'Cancelled',
+            child: Text('Cancelled'),
+          ),
+        ];
+      },
+      child: const Icon(Icons.edit), // Replace with your desired button child
+    )
+    );
+    }),
+
                   ],
                 )
               ],
@@ -90,55 +104,7 @@ class _TaskItemState extends State<TaskItem> {
     );
   }
 
-  deleteTask(String id) async {
-    _deleteInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.deleteTask(id));
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Successfully Deleted');
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (ctx) => MainBottomNavScreen()),
-            (route) => false);
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Something wrong !! Try again', true);
-      }
-    }
-    _deleteInProgress = false;
-    if (mounted) {
-      setState(() {});
-    }
-  }
 
-  _taskStatusUpdate(String status, String id) async {
-    _taskStatusUpdateInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    NetworkResponse response =
-        await NetworkCaller.getRequest(Urls.updateTaskStatues(status, id));
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Status Successfully Updated');
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (ctx) => MainBottomNavScreen()),
-            (route) => false);
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Something wrong !! Try again', true);
-      }
-    }
-    _taskStatusUpdateInProgress = false;
-    if (mounted) {
-      setState(() {});
-    }
-  }
+
+
 }

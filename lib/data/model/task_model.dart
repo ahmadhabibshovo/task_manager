@@ -4,9 +4,9 @@ class TaskModel {
   String? description;
   String? status;
   String? createdDate;
-
+  bool isDeleting =false;
   TaskModel(
-      {this.sId, this.title, this.description, this.status, this.createdDate});
+      {this.sId, this.title, this.description, this.status, this.createdDate,});
 
   TaskModel.fromJson(Map<String, dynamic> json) {
     sId = json['_id'];

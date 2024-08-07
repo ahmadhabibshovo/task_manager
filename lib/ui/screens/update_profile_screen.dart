@@ -2,21 +2,18 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:regexpattern/regexpattern.dart';
-import 'package:task_manager/data/model/network_response.dart';
-import 'package:task_manager/data/network_caller/network_caller.dart';
-import 'package:task_manager/ui/controller/auth_controller.dart';
-import 'package:task_manager/ui/screens/main_bottom_nav_screen.dart';
+import 'package:task_manager/ui/controller/update_profile_controller.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
 import 'package:task_manager/ui/widgets/profile_appbar_widget.dart';
 
-import '../../data/model/login_response.dart';
-import '../../data/utilities/urls.dart';
+import '../../routes.dart';
+import '../controller/auth_controllers/auth_controller.dart';
 import '../utility/app_constant.dart';
 import '../widgets/snake_bar_message.dart';
-import 'auth/sign_in_screen.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({super.key});
@@ -33,7 +30,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final _passwordTEController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   XFile? _selectedImage;
-  bool _updateProfileInProgress = false;
+final updateProfileController = Get.find<UpdateProfileController>();
 
   @override
   void initState() {
@@ -123,17 +120,20 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                     controller: _passwordTEController,
                     decoration: const InputDecoration(hintText: 'Password'),
                   ),
-                  Visibility(
-                    visible: _updateProfileInProgress == false,
-                    replacement: const CenteredProgressIndicator(),
-                    child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _updateProfile();
-                          }
-                        },
-                        child: const Icon(Icons.arrow_circle_right_outlined)),
-                  ),
+                  GetBuilder<UpdateProfileController>(builder: (updateProfileController){
+                    return Visibility(
+                      visible: !updateProfileController.updateProfileInProgress,
+                      replacement: const CenteredProgressIndicator(),
+                      child: ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              _onPressUpdateButton();
+                            }
+                          },
+                          child: const Icon(Icons.arrow_circle_right_outlined)),
+                    );
+                  })
+                  ,
                   const SizedBox(
                     height: 30,
                   )
@@ -171,7 +171,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                 final ImagePicker picker = ImagePicker();
                 // Pick an image.
                 _selectedImage =
-                    await picker.pickImage(source: ImageSource.camera);
+                    await picker.pickImage(source: ImageSource.camera,imageQuality: 1);
                 setState(() {});
               },
               child: const Text(
@@ -195,76 +195,53 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
-  _updateProfile() async {
-    _updateProfileInProgress = true;
 
-    if (mounted) {
-      setState(() {});
-    }
-    Map<String, dynamic> requestBody = {
-      'email': _emailTEController.text,
-      'firstName': _firstNameTEController.text,
-      'lastName': _lastNameController.text,
-      'mobile': _mobileTEController.text,
-    };
-    if (_passwordTEController.text.isNotEmpty) {
-      requestBody['password'] = _passwordTEController.text;
-    }
-    if (_selectedImage != null) {
-      File imageFile = File(_selectedImage!.path);
-      requestBody['photo'] = base64Encode(imageFile.readAsBytesSync());
-    }
-    NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.updateProfile, body: requestBody);
-    _updateProfileInProgress = false;
-    setState(() {});
-    if (response.isSuccess) {
-      _clearTextField();
 
-      if (mounted) {
-        showSnakeBarMessage(context, 'Profile Successfully Updated!!');
-        _signIn();
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Profile Update failed try Again!!', true);
-      }
-    }
+void _onPressUpdateButton()async{
+  Map<String, dynamic> requestBody = {
+    'email': _emailTEController.text,
+    'firstName': _firstNameTEController.text,
+    'lastName': _lastNameController.text,
+    'mobile': _mobileTEController.text,
+  };
+  if (_passwordTEController.text.isNotEmpty) {
+    requestBody['password'] = _passwordTEController.text;
   }
-
-  Future<void> _signIn() async {
-    Map<String, dynamic> requestData = await AuthController.getLoginData();
-    final NetworkResponse networkResponse =
-        await NetworkCaller.postRequest(Urls.login, body: requestData);
-
-    if (mounted) {
-      setState(() {});
-    }
-    if (networkResponse.isSuccess) {
-      LoginResponse loginResponse =
-          LoginResponse.fromJson(networkResponse.responseData);
-      await AuthController.saveUserAccessToken(loginResponse.token!);
-      await AuthController.saveUserData(loginResponse.userModel!);
-      await AuthController.saveLoginData(
-          _emailTEController.text.trim(), _passwordTEController.text);
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (ctx) => const MainBottomNavScreen()));
-    } else {
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const SignInScreen()),
-            (route) => false);
-      }
-      AuthController.clearALlData();
-    }
+  if (_selectedImage != null) {
+    File imageFile = File(_selectedImage!.path);
+    requestBody['photo'] = base64Encode(imageFile.readAsBytesSync());
   }
+  bool     isSuccess=await updateProfileController.updateProfile(requestBody);
+  if (isSuccess) {
+    if(mounted){
+    showSnakeBarMessage(context, 'Profile Successfully Updated!!');}
+   Get.defaultDialog(
+     title: "Logout",
+     content: const Text("if you login again your update will be apply"),
+     textCancel: 'Cancel',
+       textConfirm: 'Logout',
+       confirmTextColor: Colors.red,
+       onCancel: (){
+         Get.offAllNamed(Routes.mainNavScreenRoutes);
+       },
+       onConfirm: (){
+         Get.offAllNamed(Routes.signInScreenRoutes);
+         AuthController.clearALlData();
+    }
 
-  void _clearTextField() {
-    _emailTEController.clear();
-    _firstNameTEController.clear();
-    _lastNameController.clear();
-    _mobileTEController.clear();
-    _passwordTEController.clear();
+
+
+
+   );
+
   }
+ else {
+  if (mounted) {
+  showSnakeBarMessage(context, 'Profile Update failed try Again!!', true);
+  }
+ }
+
+}
+
+
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:task_manager/data/model/network_response.dart';
-import 'package:task_manager/data/network_caller/network_caller.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/ui/controller/add_new_task_controller.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
 import 'package:task_manager/ui/widgets/profile_appbar_widget.dart';
 import 'package:task_manager/ui/widgets/snake_bar_message.dart';
 
-import '../../data/utilities/urls.dart';
-import 'main_bottom_nav_screen.dart';
+import '../../routes.dart';
+
 
 class AddNewTaskScreen extends StatefulWidget {
   const AddNewTaskScreen({super.key});
@@ -20,7 +20,7 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
   final _titleTEController = TextEditingController();
   final _descriptionTEController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool _addNewTaskInProgress = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -55,17 +55,26 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
                     decoration: const InputDecoration(hintText: 'Description'),
                     maxLines: 4,
                   ),
-                  Visibility(
-                    visible: _addNewTaskInProgress == false,
-                    replacement: const CenteredProgressIndicator(),
-                    child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            _addNewTask();
-                          }
-                        },
-                        child: const Text('Add')),
-                  )
+                  GetBuilder<AddNewTaskController>(builder: (addNewTaskController){
+                    return Visibility(
+                      visible: !addNewTaskController.addNewTaskInProgress,
+                      replacement: const CenteredProgressIndicator(),
+                      child: ElevatedButton(
+                          onPressed: ()async {
+                            if (_formKey.currentState!.validate()) {
+                              bool isSuccess = await addNewTaskController.addNewTasks(_titleTEController.text, _descriptionTEController.text);
+                              if(isSuccess){
+                                Get.offAllNamed(Routes.mainNavScreenRoutes);
+                              }
+                              else{
+                                showSnakeBarMessage(context, 'Add New Task Failed Try Again !!!');
+                              }
+                            }
+                          },
+                          child: const Text('Add')),
+                    );
+
+                  }),
                 ],
               ),
             ),
@@ -75,40 +84,9 @@ class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
     );
   }
 
-  Future<void> _addNewTask() async {
-    _addNewTaskInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    Map<String, dynamic> requestData = {
-      'title': _titleTEController.text.trim(),
-      'description': _descriptionTEController.text.trim(),
-      'status': 'New',
-    };
-    NetworkResponse response =
-        await NetworkCaller.postRequest(Urls.createTask, body: requestData);
-    _addNewTaskInProgress = false;
-    setState(() {});
-    if (response.isSuccess) {
-      _clearTextFields();
-      if (mounted) {
-        showSnakeBarMessage(context, 'New task added!!');
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (ctx) => MainBottomNavScreen()),
-            (route) => false);
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'New task add failed try Again!!', true);
-      }
-    }
-  }
 
-  void _clearTextFields() {
-    _titleTEController.clear();
-    _descriptionTEController.clear();
-  }
+
+
 
   @override
   void dispose() {

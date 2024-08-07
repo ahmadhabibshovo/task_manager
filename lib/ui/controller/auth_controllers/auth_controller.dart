@@ -6,8 +6,6 @@ import 'package:task_manager/data/model/user_model.dart';
 class AuthController {
   static String accessToken = '';
   static String accessTokenKey = 'access-token';
-  static String emailKey = 'email';
-  static String passwordKey = 'password';
   static String userDataKey = 'user-data';
   static UserModel? userData;
 
@@ -29,18 +27,9 @@ class AuthController {
     userData = user;
   }
 
-  static Future<void> saveLoginData(String email, String password) async {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    sharedPreferences.setString(emailKey, email);
-    sharedPreferences.setString(passwordKey, password);
-  }
 
-  static Future<Map<String, dynamic>> getLoginData() async {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    String? email = sharedPreferences.getString(emailKey);
-    String? password = sharedPreferences.getString(passwordKey);
-    return {'email': email, 'password': password};
-  }
+
+
 
   static Future<UserModel?> getUserData() async {
     final sharedPreferences = await SharedPreferences.getInstance();

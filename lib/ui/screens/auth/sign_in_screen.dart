@@ -1,16 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:task_manager/data/model/login_response.dart';
-import 'package:task_manager/data/model/network_response.dart';
-import 'package:task_manager/data/network_caller/network_caller.dart';
-import 'package:task_manager/data/utilities/urls.dart';
-import 'package:task_manager/ui/controller/auth_controller.dart';
-import 'package:task_manager/ui/screens/auth/email_verifiction_screen.dart';
-import 'package:task_manager/ui/screens/auth/sign_up_screen.dart';
-import 'package:task_manager/ui/screens/main_bottom_nav_screen.dart';
+import 'package:get/get.dart';
+import 'package:task_manager/routes.dart';
+
+import 'package:task_manager/ui/controller/auth_controllers/sign_in_controller.dart';
+
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/snake_bar_message.dart';
+
 
 import '../../utility/app_constant.dart';
 
@@ -26,7 +24,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   final _passwordTEController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  bool _isSignInProgress = false;
+  final signInController=Get.find<SignInController>();
 
   @override
   Widget build(BuildContext context) {
@@ -78,15 +76,15 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(
                       height: 8,
                     ),
-                    Visibility(
-                      visible: !_isSignInProgress,
+                    GetBuilder<SignInController>(builder: (signInController)=>Visibility(
+                      visible: !signInController.isSignInProgress,
                       replacement: const Center(
                         child: CircularProgressIndicator(),
                       ),
                       child: ElevatedButton(
                           onPressed: onTapNextButton,
                           child: const Icon(Icons.arrow_circle_right_outlined)),
-                    ),
+                    )),
                     const SizedBox(
                       height: 50,
                     ),
@@ -119,58 +117,28 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   onTapSignUpButton() {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (ctx) => const SignUpScreen()));
+    Get.offAllNamed(Routes.signUpScreenRoutes);
   }
 
   onTapForgetPasswordButton() {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (ctx) => const EmailVerificationScreen()));
+    Get.offAllNamed(Routes.emailVerificationScreenRoutes);
   }
 
-  onTapNextButton() {
+  onTapNextButton() async {
     if (_formKey.currentState!.validate()) {
-      _signIn();
+   bool isSuccess = await signInController.signIn(_emailTEController.text, _passwordTEController.text);
+   if(isSuccess){
+     showSnakeBarMessage(context, "Login Successful !!!");
+     Get.offAllNamed(Routes.mainNavScreenRoutes);
+   }
+   else{
+     showSnakeBarMessage(context, signInController.errorMessage,true);
+   }
+
     }
   }
 
-  Future<void> _signIn() async {
-    _isSignInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    Map<String, dynamic> requestData = {
-      'email': _emailTEController.text.trim(),
-      'password': _passwordTEController.text
-    };
-    final NetworkResponse networkResponse =
-        await NetworkCaller.postRequest(Urls.login, body: requestData);
-    _isSignInProgress = false;
-    if (mounted) {
-      setState(() {});
-    }
-    if (networkResponse.isSuccess) {
-      showSnakeBarMessage(
-        context,
-        'Login Successful',
-      );
-      LoginResponse loginResponse =
-          LoginResponse.fromJson(networkResponse.responseData);
-      await AuthController.saveUserAccessToken(loginResponse.token!);
-      await AuthController.saveUserData(loginResponse.userModel!);
-      print(loginResponse.userModel);
-      await AuthController.saveLoginData(
-          _emailTEController.text.trim(), _passwordTEController.text);
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (ctx) => const MainBottomNavScreen()));
-    } else {
-      showSnakeBarMessage(
-          context,
-          networkResponse.errorMessage ??
-              'Email or Password is not Correct try again',
-          true);
-    }
-  }
+
 
   @override
   void dispose() {

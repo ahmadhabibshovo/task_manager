@@ -1,29 +1,29 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:task_manager/ui/screens/auth/set_password_screen.dart';
-import 'package:task_manager/ui/screens/auth/sign_in_screen.dart';
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
 import 'package:task_manager/ui/widgets/centered_progress_indicator.dart';
+import 'package:task_manager/ui/widgets/snake_bar_message.dart';
 
-import '../../../data/model/network_response.dart';
-import '../../../data/network_caller/network_caller.dart';
-import '../../../data/utilities/urls.dart';
-import '../../widgets/snake_bar_message.dart';
+import '../../../routes.dart';
+import '../../controller/auth_controllers/otp_verification_controller.dart';
 
-class PinVerificationScreen extends StatefulWidget {
-  const PinVerificationScreen({super.key, required this.email});
+
+
+class OTPVerificationScreen extends StatefulWidget {
+  const OTPVerificationScreen({super.key, required this.email});
 
   final String email;
 
   @override
-  State<PinVerificationScreen> createState() => _PinVerificationScreenState();
+  State<OTPVerificationScreen> createState() => _OTPVerificationScreenState();
 }
 
-class _PinVerificationScreenState extends State<PinVerificationScreen> {
+class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
   final _pinTEController = TextEditingController();
-  bool _otpVerifyInProgress = false;
+ final otpVerificationController = Get.find<OTPVerificationController>();
 
   @override
   Widget build(BuildContext context) {
@@ -53,13 +53,15 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
                   const SizedBox(
                     height: 8,
                   ),
-                  Visibility(
-                    visible: _otpVerifyInProgress == false,
-                    replacement: const CenteredProgressIndicator(),
-                    child: ElevatedButton(
-                        onPressed: onTapConfirmButton,
-                        child: const Text('Verify')),
-                  ),
+                 GetBuilder<OTPVerificationController>(builder: (otpVerificationController){
+                   return  Visibility(
+                     visible: !otpVerificationController.verifyOTPInProgress,
+                     replacement: const CenteredProgressIndicator(),
+                     child: ElevatedButton(
+                         onPressed: onTapConfirmButton,
+                         child: const Text('Verify')),
+                   );
+                 }),
                   const SizedBox(
                     height: 50,
                   ),
@@ -115,46 +117,26 @@ class _PinVerificationScreenState extends State<PinVerificationScreen> {
       keyboardType: TextInputType.number,
       enableActiveFill: true,
       controller: _pinTEController,
+      autoDisposeControllers: false,
     );
   }
 
   onTapSignInButton() {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (ctx) => const SignInScreen()));
+   Get.offAllNamed(Routes.signInScreenRoutes);
   }
 
-  onTapConfirmButton() {
+  onTapConfirmButton() async{
     if (_pinTEController.text.trim().length == 6) {
-      _otpValidate();
+      bool isSuccess = await otpVerificationController.otpValidate(_pinTEController.text.trim(), widget.email);
+      if(isSuccess){
+        Get.offAllNamed(Routes.setPasswordScreenRoutes(_pinTEController.text.trim()));
+      }
+      else{
+        showSnakeBarMessage(context, otpVerificationController.errorMessage,true);
+      }
     }
   }
 
-  _otpValidate() async {
-    _otpVerifyInProgress = true;
-    if (mounted) {
-      setState(() {});
-    }
-    NetworkResponse response = await NetworkCaller.getRequest(
-        Urls.recoverVerifyOtp(_pinTEController.text.trim(), widget.email));
-    if (response.isSuccess) {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Otp Verified');
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (ctx) => SetPasswordScreen(
-                      email: widget.email,
-                      otp: _pinTEController.text.trim(),
-                    )));
-      }
-    } else {
-      if (mounted) {
-        showSnakeBarMessage(context, 'Otp not Valid !! Try again', true);
-      }
-    }
-    _otpVerifyInProgress = false;
-    setState(() {});
-  }
 
   @override
   void dispose() {
