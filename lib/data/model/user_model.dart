@@ -1,28 +1,40 @@
 class UserModel {
+  String? sId;
   String? email;
   String? firstName;
   String? lastName;
   String? mobile;
-  String? photo;
+  String? password;
+  String? createdDate;
 
   UserModel(
-      {this.email, this.firstName, this.lastName, this.mobile, this.photo});
+      {this.sId,
+      this.email,
+      this.firstName,
+      this.lastName,
+      this.mobile,
+      this.password,
+      this.createdDate});
 
   UserModel.fromJson(Map<String, dynamic> json) {
+    sId = json['_id'];
     email = json['email'];
     firstName = json['firstName'];
     lastName = json['lastName'];
     mobile = json['mobile'];
-    photo = json['photo'];
+    password = json['password'];
+    createdDate = json['createdDate'];
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = <String, dynamic>{};
-    data['email'] = email;
-    data['firstName'] = firstName;
-    data['lastName'] = lastName;
-    data['mobile'] = mobile;
-    data['photo'] = photo;
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['_id'] = this.sId;
+    data['email'] = this.email;
+    data['firstName'] = this.firstName;
+    data['lastName'] = this.lastName;
+    data['mobile'] = this.mobile;
+    data['password'] = this.password;
+    data['createdDate'] = this.createdDate;
     return data;
   }
 }

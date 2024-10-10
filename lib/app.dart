@@ -20,6 +20,7 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       initialBinding: ControllerBindings(),
       navigatorKey: App.navigatorKey,
       title: 'Flutter Demo',

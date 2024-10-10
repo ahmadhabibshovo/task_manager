@@ -2,9 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:regexpattern/regexpattern.dart';
-
+import 'package:task_manager/data/model/registration_model.dart';
 import 'package:task_manager/routes.dart';
-
 import 'package:task_manager/ui/utility/app_colors.dart';
 import 'package:task_manager/ui/utility/app_constant.dart';
 import 'package:task_manager/ui/widgets/background_widget.dart';
@@ -27,7 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordTEController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _showPassword = false;
-  final signUpController=Get.find<SignUpController>();
+  final signUpController = Get.find<SignUpController>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,18 +124,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(
                       height: 8,
                     ),
-                    GetBuilder<SignUpController>(builder:(signUpController)=> Visibility(
-                      visible:!signUpController.isSignUpProgress,
-                      replacement: const Center(
-                        child: CircularProgressIndicator(),
+                    GetBuilder<SignUpController>(
+                      builder: (signUpController) => Visibility(
+                        visible: !signUpController.isSignUpProgress,
+                        replacement: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                        child: ElevatedButton(
+                            onPressed: () async {
+                              onTapSignInButton();
+                            },
+                            child:
+                                const Icon(Icons.arrow_circle_right_outlined)),
                       ),
-                      child: ElevatedButton(
-                          onPressed: () async {
-                            onTapSignInButton();
-                          },
-                          child: const Icon(Icons.arrow_circle_right_outlined)),
-                    ),),
-
+                    ),
                     const SizedBox(
                       height: 50,
                     ),
@@ -148,11 +149,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         children: [
                           TextSpan(
                             recognizer: TapGestureRecognizer()
-                              ..onTap =
-                              (){
+                              ..onTap = () {
                                 onTapSignInText();
                               },
-
                             text: 'Sign in',
                             style: const TextStyle(color: AppColors.themeColor),
                           ),
@@ -171,31 +170,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   onTapSignInButton() async {
     if (_formKey.currentState!.validate()) {
-      Map<String, dynamic> requestInput = {
+      RegistrationModel requestInput = RegistrationModel.fromJson({
         "email": _emailTEController.text.trim(),
         "firstName": _firstNameTEController.text.trim(),
         "lastName": _lastNameTEController.text.trim(),
         "mobile": _mobileNoTEController.text.trim(),
         "password": _passwordTEController.text,
         "photo": "",
-      };
-      bool isaSuccess = await signUpController.signUp(requestInput);
-      if(isaSuccess){
+      });
+      bool isaSuccess = await signUpController.signUp(requestInput.toJson());
+      if (isaSuccess) {
         Get.offAllNamed(Routes.signInScreenRoutes);
         showSnakeBarMessage(context, "Sign Up Successful !!!");
-      }
-      else{
-        showSnakeBarMessage(context, signUpController.errorMessage,true);
+      } else {
+        showSnakeBarMessage(context, signUpController.errorMessage, true);
       }
     }
   }
-  onTapSignInText(){
+
+  onTapSignInText() {
     Get.offAllNamed(Routes.signInScreenRoutes);
   }
-
-
-
-
 
   @override
   void dispose() {

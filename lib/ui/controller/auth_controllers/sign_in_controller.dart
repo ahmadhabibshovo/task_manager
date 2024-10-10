@@ -6,13 +6,11 @@ import '../../../data/model/login_response.dart';
 import '../../../data/model/network_response.dart';
 import '../../../data/utilities/urls.dart';
 
-
-class SignInController extends GetxController{
-
-   bool isSignInProgress = false;
-   String? _errorMessage;
-   String get  errorMessage => _errorMessage ?? "Sign In Failed Try Again !!!" ;
-  Future<bool> signIn(String email,String password) async {
+class SignInController extends GetxController {
+  bool isSignInProgress = false;
+  String? _errorMessage;
+  String get errorMessage => _errorMessage ?? "Sign In Failed Try Again !!!";
+  Future<bool> signIn(String email, String password) async {
     bool isSuccess = false;
     isSignInProgress = true;
     update();
@@ -21,16 +19,15 @@ class SignInController extends GetxController{
       'password': password
     };
     final NetworkResponse networkResponse =
-    await NetworkCaller.postRequest(Urls.login, body: requestData);
+        await NetworkCaller.postRequest(Urls.login, body: requestData);
     isSignInProgress = false;
-   update();
+    update();
     if (networkResponse.isSuccess) {
-    isSuccess=true;
+      isSuccess = true;
       LoginResponse loginResponse =
-      LoginResponse.fromJson(networkResponse.responseData);
+          LoginResponse.fromJson(networkResponse.responseData);
       await AuthController.saveUserAccessToken(loginResponse.token!);
-      await AuthController.saveUserData(loginResponse.userModel!);
-
+      await AuthController.saveUserData(loginResponse.userModel!.first);
     } else {
       _errorMessage = networkResponse.errorMessage;
     }

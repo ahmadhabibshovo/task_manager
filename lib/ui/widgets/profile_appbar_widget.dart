@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -44,14 +42,6 @@ AppBar profileAppBar(context, [bool fromUpdateProfile = false]) {
       onTap: () {
         Get.toNamed(Routes.updateProfileScreen);
       },
-      child: CircleAvatar(
-        radius: 12,
-        backgroundImage:
-        AuthController.userData!.photo == ''
-            ? null:MemoryImage(base64Decode(AuthController.userData!.photo!),),
-        child: AuthController.userData!.photo == ''
-            ? const Icon(Icons.person):null,
-      ),
     ),
   );
 }
